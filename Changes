@@ -1,4 +1,6 @@
 Revision history for Text-ShellWords
 
 {{$NEXT}}
+
+0.1.0  2020-07-11T08:31:07-04:00
     - Initial version, essentially feature complete
