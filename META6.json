@@ -10,10 +10,20 @@
   "name" : "Text::ShellWords",
   "perl" : "6.c",
   "provides" : {
+    "Text::ShellWords" : "lib/Text/ShellWords.rakumod"
   },
   "resources" : [ ],
-  "source-url" : "",
-  "tags" : [ ],
+  "source-url" : "https://github.com/softmoth/raku-Text-ShellWords.git",
+  "support" : {
+    "bugtracker" : "https://github.com/softmoth/raku-Text-ShellWords/issues",
+    "source" : "https://github.com/softmoth/raku-Text-ShellWords.git"
+  },
+  "tags" : [
+    "text",
+    "shell",
+    "parse",
+    "split"
+  ],
   "test-depends" : [ ],
-  "version" : "0.0.1"
+  "version" : "0.1.0"
 }

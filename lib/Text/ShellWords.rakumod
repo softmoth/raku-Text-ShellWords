@@ -1,4 +1,4 @@
-unit module Text::ShellWords:auth<github:softmoth>:api<1.0>:ver<0.0.1>;
+unit module Text::ShellWords:auth<github:softmoth>:api<1.0>:ver<0.1.0>;
 
 =begin pod
 
