@@ -1,11 +1,15 @@
 use Test;
 use Text::ShellWords;
 
-plan 4;
+plan 5;
 
 sub run-tests(*@tests) {
     plan +@tests;
-    is-deeply shell-words(.key), .value, "｢{.key}｣" for @tests;
+    is-deeply
+            shell-words(.key),
+            .value,
+            "｢{.key}｣".subst("\n", '␤', :g)
+        for @tests;
 }
 
 subtest "bare words" => sub {
@@ -46,6 +50,41 @@ subtest "double quotes" => sub {
         Q{"a\"b"} => (Q{a"b},),
         Q{"a\nb"} => (Q{a\nb},),
         Q{a X"hello world" b\"} => ('a', 'Xhello world', 'b"'),
+        ;
+}
+
+subtest "multi-line input" => sub {
+    run-tests
+        Q:to/END/
+                hello
+                world
+                END
+            => ('hello', 'world',),
+        Q:to/END/
+                'hello
+                world'
+                END
+            => ("hello\nworld",),
+        Q:to/END/
+                'hello\
+                world'
+                END
+            => ("hello\\\nworld",),
+        Q:to/END/
+                "hello
+                world"
+                END
+            => ("hello\nworld",),
+        Q:to/END/
+                "hello\
+                world"
+                END
+            => ("helloworld",),
+        Q:to/END/
+                "hello \
+                 world"
+                END
+            => ("hello  world",),
         ;
 }
 

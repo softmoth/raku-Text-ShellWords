@@ -18,7 +18,8 @@ my @output = run(:out, shell-words $input).out.lines(:close);
 
 =head1 DESCRIPTION
 
-Text::ShellWords provides routines to split  a string into words, respecting shell quoting rules.
+Text::ShellWords provides routines to split a string into words, respecting
+shell quoting rules.
 
 Currently only the Unix Bourne Shell (`/bin/sh`) rules are implemented.
 
@@ -42,11 +43,13 @@ our grammar Grammar {
     }
     token atom:sym<double-str> {
         '"' ~ '"'
-        [$<plain>=<-[\\"]> *] *
-            %% $<bs>=[\\ .]
+        [$<plain> = <-[\\"]> *] *
+            %% $<bs> = [\\ .]
     }
     token atom:sym<simple> {
-        <-[\s \\ "]>
+        # Because of Longest Token Matching, other atoms will always be
+        # tried first. So we just need to avoid the word delimiter.
+        \S
     }
 }
 
@@ -64,10 +67,13 @@ our class Actions {
             given $c.key {
                 when '~' { $!keep ?? $c.value !! '' }
                 when 'bs' {
-                    $_ eq any(<\ ">)
-                        ?? $_
-                        !! $c.value
-                    with $c.value.substr(1)
+                    given $c.value.substr(1) {
+                        when any(<\ ">)     { $_ }
+                        # Escaped newline in double-quoted strings is
+                        # removed entirely in Bourne Shell
+                        when "\n"           { '' }
+                        default             { $c.value }
+                    }
                 }
                 when 'plain' { $c.value }
             }
