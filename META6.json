@@ -1,0 +1,19 @@
+{
+  "auth" : "github:softmoth",
+  "authors" : [
+    "Tim Siegel"
+  ],
+  "build-depends" : [ ],
+  "depends" : [ ],
+  "description" : "Split a string into words like a command-line shell",
+  "license" : "Artistic-2.0",
+  "name" : "Text::ShellWords",
+  "perl" : "6.c",
+  "provides" : {
+  },
+  "resources" : [ ],
+  "source-url" : "",
+  "tags" : [ ],
+  "test-depends" : [ ],
+  "version" : "0.0.1"
+}
