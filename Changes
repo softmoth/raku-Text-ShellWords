@@ -1,7 +1,11 @@
 Revision history for Text-ShellWords
 
 {{$NEXT}}
-    - Fix escaped newline in double-quoted strings
+
+0.1.1  2020-07-12T04:41:37-04:00
+    - Fix escaped newline
+    - Improve error handling on incomplete parse
+    - More documentation, test coverage, and bug fixes
 
 0.1.0  2020-07-11T08:31:07-04:00
     - Initial version, essentially feature complete

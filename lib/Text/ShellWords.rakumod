@@ -52,7 +52,7 @@ my class X::Text::ShellWords::Incomplete is Exception {
     method message { "Input is malformed or incomplete, ends with '$!word'" }
 }
 
-module Text::ShellWords:auth<github:softmoth>:api<1.0>:ver<0.1.0> {
+module Text::ShellWords:auth<github:softmoth>:api<1.0>:ver<0.1.1> {
     #| Parsing grammar for a shell-input string
     our grammar Grammar {
         rule TOP {
