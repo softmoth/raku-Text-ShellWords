@@ -65,7 +65,7 @@ module Text::ShellWords:auth<github:softmoth>:api<1.0>:ver<0.1.0> {
 
         proto regex atom { <...> }
         token atom:sym<backslashed> {
-            \\ <( . )>
+            \\ ( . )
         }
         token atom:sym<single-str> {
             "'" ~ "'" (<-[']> *)
@@ -132,7 +132,11 @@ say @words[1].^name if not @words[1];   # OUTPUT: «Text::ShellWords::WordFailur
                     ?? WordFailure.new(X::Text::ShellWords::Incomplete.new: :$word)
                     !! $word;
         }
-        method atom:sym<backslashed>($/) { make ~$/ }
+        method atom:sym<backslashed>($/) {
+            # Escaped newline in double-quoted strings is removed entirely
+            # in Bourne Shell
+            make ~ ($!keep ?? $/ !! $0 eq "\n" ?? '' !! $0);
+        }
         method atom:sym<single-str>($/) {
             make ~ ($!keep ?? $/ !! $0);
         }
@@ -143,8 +147,6 @@ say @words[1].^name if not @words[1];   # OUTPUT: «Text::ShellWords::WordFailur
                     when 'bs' {
                         given $c.value.substr(1) {
                             when any(<\ ">)     { $_ }
-                            # Escaped newline in double-quoted strings is
-                            # removed entirely in Bourne Shell
                             when "\n"           { '' }
                             default             { $c.value }
                         }

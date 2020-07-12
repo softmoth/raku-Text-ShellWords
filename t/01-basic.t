@@ -52,6 +52,11 @@ subtest "multi-line input" => sub {
                 END
             => ('hello', 'world',),
         Q:to/END/
+                hello\
+                world
+                END
+            => ('helloworld',),
+        Q:to/END/
                 'hello
                 world'
                 END
