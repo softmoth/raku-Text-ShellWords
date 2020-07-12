@@ -1,7 +1,7 @@
 use Test;
 use Text::ShellWords;
 
-plan 6;
+plan 7;
 
 subtest "bare words" => sub {
     run-tests
@@ -41,6 +41,7 @@ subtest "double quotes" => sub {
         Q{"a\"b"} => (Q{a"b},),
         Q{"a\nb"} => (Q{a\nb},),
         Q{a X"hello world" b\"} => ('a', 'Xhello world', 'b"'),
+        Q{\\\ \n "\\\"\n\'\  "} => (Q{\ n}, Q{\"\n\'\  }),
         ;
 }
 
@@ -93,11 +94,21 @@ subtest "partial success" => sub {
     run-test-incomplete Q{hello there, world"}, ('hello', 'there,', Q{world"});
 }
 
+subtest ":keep quote marks" => sub {
+    run-tests :keep,
+        Q{a X'hello world' b\'} => (Q{a}, Q{X'hello world'}, Q{b\'}),
+        Q{a X"hello world" b\"} => (Q{a}, Q{X"hello world"}, Q{b\"}),
+        Q{\\\ \n "\\\"\n\'\  "} => (Q{\\\ \n}, Q{"\\\"\n\'\  "}),
+        ;
+    # expected: $("\\\\\\ \\n", "\"\\\\\\\"\\n\\'\\  \"")
+    #      got: $("\\\\\\ \\n", "\"\\    \"\\n\\'\\  \"")
 
-sub run-tests(*@tests) {
+}
+
+sub run-tests(Bool :$keep, *@tests) {
     plan +@tests;
     is-deeply
-            shell-words(.key),
+            shell-words(:$keep, .key),
             .value,
             "｢{.key}｣".subst("\n", '␤', :g)
         for @tests;

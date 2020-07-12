@@ -143,15 +143,21 @@ say @words[1].^name if not @words[1];   # OUTPUT: «Text::ShellWords::WordFailur
         method atom:sym<double-str>($/) {
             make $/.chunks.map(-> $c {
                 given $c.key {
-                    when '~' { $!keep ?? $c.value !! '' }
+                    when '~' {
+                        succeed $c.value if $!keep;
+                        ''
+                    }
                     when 'bs' {
+                        succeed $c.value if $!keep;
                         given $c.value.substr(1) {
                             when any(<\ ">)     { $_ }
                             when "\n"           { '' }
                             default             { $c.value }
                         }
                     }
-                    when 'plain' { $c.value }
+                    when 'plain' {
+                        succeed $c.value
+                    }
                 }
             }).join
         }
