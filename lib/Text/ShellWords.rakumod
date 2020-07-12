@@ -17,18 +17,43 @@ my @output = run(:out, shell-words $input).out.lines(:close);
 =head1 DESCRIPTION
 
 Text::ShellWords provides routines to split a string into words, respecting
-shell quoting rules.
+the Unix Bourne Shell (`/bin/sh`) quoting rules. From the C<bash> manual
+page:
 
-Currently only the Unix Bourne Shell (`/bin/sh`) rules are implemented.
+=begin item
+There are three quoting mechanisms: the escape character, single quotes, and
+double quotes.
+
+A non-quoted backslash (C<\>) is the escape character. It preserves the
+literal value of the next character that follows, with the exception of
+I<newline>. If a C<\>I<newline> pair appears, and the backslash is not
+itself quoted, the C<\>I<newline> is treated as a line continuation (that
+is, it is removed from the input stream and effectively ignored).
+
+Enclosing characters in single quotes preserves the literal value of each
+character within the quotes. A single quote may not occur between single
+quotes, even when preceded by a backslash.
+
+Enclosing characters in double quotes preserves the literal value of all
+characters within the quotes, with the exception of C<\>. The backslash
+retains its special meaning only when followed by one of the following
+characters: C<">, C<\>, or I<newline>. A double quote may be quoted within
+double quotes by preceding it with a backslash.
+=end item
+
+=for item
+Unlike the Bourne Shell, the characters C<$>, C<`>, and C<!> have no special
+meaning to this module.
 
 =end pod
 
 my class X::Text::ShellWords::Incomplete is Exception {
     has $.word;
-    method message { "Input is mal-formed or incomplete, ends with '$!word'" }
+    method message { "Input is malformed or incomplete, ends with '$!word'" }
 }
 
 module Text::ShellWords:auth<github:softmoth>:api<1.0>:ver<0.1.0> {
+    #| Parsing grammar for a shell-input string
     our grammar Grammar {
         rule TOP {
             <?> <word> *
@@ -61,6 +86,36 @@ module Text::ShellWords:auth<github:softmoth>:api<1.0>:ver<0.1.0> {
         }
     }
 
+    #| Error indicator for an incomplete parse
+    my class WordFailure is Failure {
+
+=head3 Incomplete parsing
+
+=for pod
+When the input string is malformed, or intended to continue on another line,
+the last word is made a C<WordFailure> object, rather than a C<Str>. This
+object behaves just like any C<Failure>, but it stringifies to the final
+piece of input text if it has been C<handled> (by testing if it is C<True>
+or C<defined>).
+
+=begin code :lang<raku>
+my @words = shell-words 'hello, "world';
+put @words[0];      # OUTPUT «hello,␤»
+try put @words[1];  # OUTPUT «»
+put $!.message;     # OUTPUT «Input is malformed or incomplete, ends with '"world'␤»
+# Now that it's been handled, it can used as a Str
+put @words[1];      # OUTPUT «"world␤»
+# But it is still a Failure
+say @words[1].^name if not @words[1];   # OUTPUT: «Text::ShellWords::WordFailure␤»
+=end code
+
+        method Str {
+            self.handled ?? self.exception.word !! self.fail
+        }
+    }
+
+    #| Actions class for C<.parse>. Use C<.new(:keep)> to keep quoting
+    #| characters in the made words
     our class Actions {
         has Bool $.keep;
 
@@ -74,7 +129,7 @@ module Text::ShellWords:auth<github:softmoth>:api<1.0>:ver<0.1.0> {
             }
 
             make $incomplete
-                    ?? Failure.new(X::Text::ShellWords::Incomplete.new: :$word)
+                    ?? WordFailure.new(X::Text::ShellWords::Incomplete.new: :$word)
                     !! $word;
         }
         method atom:sym<backslashed>($/) { make ~$/ }
@@ -102,15 +157,15 @@ module Text::ShellWords:auth<github:softmoth>:api<1.0>:ver<0.1.0> {
         method atom:sym<simple>($/) { make ~$/ }
     }
 
-    #| Split a string into its shell-quoted words
+
+=head2 shell-words
+
+    #| Split a string into its shell-quoted words. If C<keep> is True, the
+    #| quote characters are preserved in the returned words. By default they
+    #| are removed.
     sub shell-words(
         Cool:D $input,
         Bool :$keep = False,
-
-=for pod
-If C<keep> is True, the quote characters are preserved in the returned words.
-By default they are removed.
-
     ) is export {
         my $grammar = Grammar.new;
         my $actions = Actions.new: :$keep;
@@ -123,6 +178,14 @@ By default they are removed.
 }
 
 =begin pod
+
+=head1 SEE ALSO
+
+This module is inspired by, but has different behavior than, Perl's
+L<Text::ParseWords|https://metacpan.org/pod/Text::ParseWords> and
+L<Text::Shellwords|https://metacpan.org/pod/Text::Shellwords>.
+
+The L<Bash manual page|https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Quoting> describes the three quoting mechanisms copied by this module.
 
 =head1 AUTHOR
 
