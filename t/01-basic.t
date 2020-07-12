@@ -1,7 +1,7 @@
 use Test;
 use Text::ShellWords;
 
-plan 5;
+plan 6;
 
 sub run-tests(*@tests) {
     plan +@tests;
@@ -10,6 +10,19 @@ sub run-tests(*@tests) {
             .value,
             "｢{.key}｣".subst("\n", '␤', :g)
         for @tests;
+}
+
+sub run-test-incomplete($input, @output) {
+    subtest "｢$input｣".subst("\n", '␤', :g) => sub {
+        plan 4;
+        my @words;
+        lives-ok { @words = shell-words $input }, "shell-words lives";
+        is-deeply @words.head(*-1), @output.head(*-1),
+            "initial words are intact";
+        fails-like { @words.tail }, X::Text::ShellWords::Incomplete,
+            "final word fails as Incomplete";
+        is @words.tail.exception.word, @output.tail, "final word stringifies OK";
+    }
 }
 
 subtest "bare words" => sub {
@@ -86,6 +99,15 @@ subtest "multi-line input" => sub {
                 END
             => ("hello  world",),
         ;
+}
+
+subtest "partial success" => sub {
+    plan 5;
+    run-test-incomplete Q{hello there, 'world}, ('hello', 'there,', Q{'world});
+    run-test-incomplete Q{hello there, "world}, ('hello', 'there,', Q{"world});
+    run-test-incomplete Q{hello there, world\}, ('hello', 'there,', Q{world\});
+    run-test-incomplete Q{hello there, world'}, ('hello', 'there,', Q{world'});
+    run-test-incomplete Q{hello there, world"}, ('hello', 'there,', Q{world"});
 }
 
 # vi:ft=raku

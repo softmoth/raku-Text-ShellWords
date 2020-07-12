@@ -25,6 +25,11 @@ Currently only the Unix Bourne Shell (`/bin/sh`) rules are implemented.
 
 =end pod
 
+my class X::Text::ShellWords::Incomplete is Exception {
+    has $.word;
+    method message { "Input is mal-formed or incomplete, ends with '$!word'" }
+}
+
 our grammar Grammar {
     rule TOP {
         <?> <word> *
@@ -46,9 +51,13 @@ our grammar Grammar {
         [$<plain> = <-[\\"]> *] *
             %% $<bs> = [\\ .]
     }
+    token atom:sym<incomplete> {
+        # Catch atom prefixes to identify an incomplete atom at the end
+        \\ | "'" | '"'
+    }
     token atom:sym<simple> {
         # Because of Longest Token Matching, other atoms will always be
-        # tried first. So we just need to avoid the word delimiter.
+        # tried first, so we just need to avoid the word delimiter
         \S
     }
 }
@@ -57,7 +66,18 @@ our class Actions {
     has Bool $.keep;
 
     method TOP($/) { make $<word>.map(*.made) }
-    method word($/) { make $<atom>».made.join }
+    method word($/) {
+        my $incomplete;
+        my $word = '';
+        for $<atom>».made {
+            when Pair { $incomplete = True; $word ~= .value }
+            default   { $word ~= $_ }
+        }
+
+        make $incomplete
+                ?? Failure.new(X::Text::ShellWords::Incomplete.new: :$word)
+                !! $word;
+    }
     method atom:sym<backslashed>($/) { make ~$/ }
     method atom:sym<single-str>($/) {
         make ~ ($!keep ?? $/ !! $0);
@@ -79,6 +99,7 @@ our class Actions {
             }
         }).join
     }
+    method atom:sym<incomplete>($/) { make 'incomplete' => ~$/ }
     method atom:sym<simple>($/) { make ~$/ }
 }
 
@@ -95,22 +116,10 @@ By default they are removed.
     my $grammar = Grammar.new;
     my $actions = Actions.new: :$keep;
 
-    $grammar.subparse($input, :$actions);
-    $/ or die "Unexpected parse failure of ｢$input｣: $/";
+    $grammar.parse($input, :$actions)
+        or die "Unexpected parse failure of ｢$input｣";
 
-    sub remainder($/) {
-        if $/.pos < $/.orig.chars {
-            Failure.new($/.orig.substr($/.pos))
-                but role {
-                    method Str { self.exception.message }
-                }
-        }
-        else {
-            Empty
-        }
-    }
-
-    | $/.made, remainder($/)
+    $/.made<>
 }
 
 =begin pod
